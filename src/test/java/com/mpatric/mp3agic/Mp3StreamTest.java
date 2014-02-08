@@ -35,10 +35,6 @@ public class Mp3StreamTest {
 
         for(File file : allSampleTagFiles) {
 
-            if(!file.getName().equals("v_long.mp3"))
-                continue;;
-
-
             System.out.println("Stream testing " + file.getName());
             Mp3Stream mp3Stream = new Mp3Stream(new FileInputStream(file), file.length());
             Mp3File mp3File = new Mp3File(file.getAbsolutePath());
