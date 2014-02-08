@@ -34,10 +34,22 @@ public class Mp3StreamTest {
     public void testStreamFromFile() throws Exception {
 
         for(File file : allSampleTagFiles) {
+
+            if(!file.getName().equals("v_long.mp3"))
+                continue;;
+
+
             System.out.println("Stream testing " + file.getName());
             Mp3Stream mp3Stream = new Mp3Stream(new FileInputStream(file), file.length());
+            Mp3File mp3File = new Mp3File(file.getAbsolutePath());
+
             Assert.assertNotNull(mp3Stream);
-            assert(fileAndStreamEquals(file.getAbsolutePath(), mp3Stream));
+            Assert.assertEquals("Lengths not equal", mp3File.getLength(), mp3Stream.getLength());
+            Assert.assertEquals("EndOffsets not equal", mp3File.getEndOffset(), mp3Stream.getEndOffset());
+            Assert.assertEquals("Durations not equal", mp3File.getLengthInMilliseconds(), mp3Stream.getLengthInMilliseconds());
+
+
+            System.out.println(mp3Stream.getLengthInSeconds());
         }
 
     }
@@ -56,6 +68,8 @@ public class Mp3StreamTest {
 
     public boolean fileAndStreamEquals(String absolutePath, Mp3Stream stream) throws InvalidDataException, IOException, UnsupportedTagException {
 
+
+
         Mp3File file = new Mp3File(absolutePath);
         if(stream.getId3v2Tag() != null) {
             if(file.getId3v2Tag() != null) {
@@ -72,6 +86,8 @@ public class Mp3StreamTest {
         } else {
             return false;
         }
+
+
     }
 
     public static byte[] readFile(File file) throws IOException {

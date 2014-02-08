@@ -58,12 +58,11 @@ public class Mp3Stream {
      */
     public Mp3Stream(InputStream is, long totalLength, int bufferLength, boolean scanFile) throws IOException, UnsupportedTagException, InvalidDataException {
         if (bufferLength < MINIMUM_BUFFER_LENGTH + 1) throw new IllegalArgumentException("Buffer too small");
-        if (bufferLength % RandomAccessStream.BLOCK_BASE > 0)
-            throw new IllegalArgumentException("BufferLength must be exact multiple of RandomAccessStreams's block base (" + String.valueOf(RandomAccessStream.BLOCK_BASE) + ")");
+
         this.bufferLength = bufferLength;
         this.scanFile = scanFile;
         this.length = totalLength;
-        this.ris = new RandomAccessStream(is, bufferLength / RandomAccessStream.BLOCK_BASE);
+        this.ris = new RandomAccessStream(is);
         init();
     }
 
@@ -89,15 +88,15 @@ public class Mp3Stream {
             }
         } finally {
             //Closing of the stream must not be our job.
-            //ris.close();
+           //ris.close();
         }
     }
 
-    protected int preScanStream(InputStream is) {
+    protected int preScanStream() {
         byte[] bytes = new byte[AbstractID3v2Tag.HEADER_LENGTH];
         try {
             ris.seek(0);
-            int bytesRead = is.read(bytes, 0, AbstractID3v2Tag.HEADER_LENGTH);
+            int bytesRead = ris.readFully(bytes, AbstractID3v2Tag.HEADER_LENGTH);
             if (bytesRead == AbstractID3v2Tag.HEADER_LENGTH) {
                 try {
                     ID3v2TagFactory.sanityCheckTag(bytes);
@@ -116,12 +115,12 @@ public class Mp3Stream {
 
     private void scanStream() throws IOException, InvalidDataException {
         byte[] bytes = new byte[bufferLength];
-        int fileOffset = preScanStream(ris);
+        int fileOffset = preScanStream();
         ris.seek(fileOffset);
         boolean lastBlock = false;
         int lastOffset = fileOffset;
         while (!lastBlock) {
-            int bytesRead = ris.read(bytes, 0, bufferLength);
+            int bytesRead = ris.readFully(bytes, bufferLength);
             if (bytesRead < bufferLength) lastBlock = true;
             if (bytesRead >= MINIMUM_BUFFER_LENGTH) {
                 while (true) {
@@ -261,7 +260,7 @@ public class Mp3Stream {
         byte[] bytes = new byte[ID3v1Tag.TAG_LENGTH];
         ris.seek(getLength() - ID3v1Tag.TAG_LENGTH);
 
-        int bytesRead = ris.read(bytes, 0, ID3v1Tag.TAG_LENGTH);
+        int bytesRead = ris.readFully(bytes, ID3v1Tag.TAG_LENGTH);
         if (bytesRead < ID3v1Tag.TAG_LENGTH) throw new IOException("Not enough bytes read");
         try {
             id3v1Tag = new ID3v1Tag(bytes);
@@ -279,7 +278,7 @@ public class Mp3Stream {
             else bufferLength = startOffset;
             byte[] bytes = new byte[bufferLength];
             ris.seek(0);
-            int bytesRead = ris.read(bytes, 0, bufferLength);
+            int bytesRead = ris.readFully(bytes, bufferLength);
             if (bytesRead < bufferLength) throw new IOException("Not enough bytes read");
             try {
                 id3v2Tag = ID3v2TagFactory.createTag(bytes);
@@ -297,8 +296,8 @@ public class Mp3Stream {
         } else {
             customTag = new byte[bufferLength];
             ris.seek(endOffset + 1);
-            int bytesRead = ris.read(customTag, 0, bufferLength);
-            if (bytesRead < bufferLength) throw new IOException("Not enough bytes read");
+            int bytesRead = ris.readFully(customTag, bufferLength);
+            if (bytesRead < bufferLength) throw new IOException("Not enough bytes read.");
         }
     }
 

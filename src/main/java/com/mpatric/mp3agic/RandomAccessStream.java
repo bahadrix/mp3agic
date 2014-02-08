@@ -5,10 +5,9 @@ import java.util.Vector;
 
 
 public final class RandomAccessStream extends InputStream {
-    public static final int BLOCK_BASE = 8;
-    private final int BLOCK_SIZE;
-    private final int BLOCK_MASK;
-    private final int BLOCK_SHIFT;
+    private int BLOCK_SIZE = 512;
+    private int BLOCK_MASK = 511;
+    private int BLOCK_SHIFT = 9;
 
     private InputStream src;
 
@@ -17,22 +16,13 @@ public final class RandomAccessStream extends InputStream {
     private long length;
     private boolean foundEOS;
 
-    public RandomAccessStream(InputStream inputstream) {
-        this(inputstream, 8192);
-    }
 
     /**
      * Constructs a RandomAccessStream from an InputStream. Seeking
      * backwards is supported using a memory cache.
-     *
-     * @param inputstream
-     * @param blockFactor Mostly 8192 for block size of 65536
-     */
-    public RandomAccessStream(InputStream inputstream, int blockFactor) {
+     **/
+    public RandomAccessStream(InputStream inputstream) {
 
-        BLOCK_SIZE = BLOCK_BASE * blockFactor;
-        BLOCK_MASK = BLOCK_SIZE - 1;
-        BLOCK_SHIFT = BLOCK_BASE * 2;
 
         pointer = 0L;
         data = new Vector();
@@ -72,23 +62,27 @@ public final class RandomAccessStream extends InputStream {
         else {
             byte abyte1[] = (byte[]) data.elementAt((int) (pointer >> BLOCK_SHIFT));
             int k = Math.min(len, BLOCK_SIZE - (int) (pointer & BLOCK_MASK));
+
             System.arraycopy(abyte1, (int) (pointer & BLOCK_MASK), bytes, off, k);
             pointer += k;
             return k;
         }
     }
-
-    public final void readFully(byte[] bytes) throws IOException {
-        readFully(bytes, bytes.length);
+    /*
+    public final int readFully(byte[] bytes) throws IOException {
+        return readFully(bytes, bytes.length);
     }
+     */
 
-    public final void readFully(byte[] bytes, int len) throws IOException {
+
+    public final int readFully(byte[] bytes, int len) throws IOException {
         int read = 0;
         do {
             int l = read(bytes, read, len - read);
             if (l < 0) break;
             read += l;
         } while (read < len);
+        return read;
     }
 
     private long readUntil(long l) throws IOException {
